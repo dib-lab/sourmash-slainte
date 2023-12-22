@@ -1,0 +1,5 @@
+metagenomes:
+- data/metagenomes/metag*.fa.gz
+
+genomes:
+- data/genomes/*.fa.gz
