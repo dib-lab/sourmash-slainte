@@ -53,6 +53,9 @@ rule all:
                n=METAGENOME_NAMES, k=GATHER_KSIZE),
         expand("outputs/metag_gather/{n}.{k}.gather.csv",
                n=METAGENOME_NAMES, k=GATHER_KSIZE),
+        expand("outputs/metag_gather/{n}.{k}.kreport.out",
+               n=METAGENOME_NAMES, k=GATHER_KSIZE),
+        expand("outputs/metag_gather/metag.{k}.kreport.csv", k=GATHER_KSIZE),
 
 def genome_inp(wc):
     return GENOME_NAMES[wc.name]
@@ -175,6 +178,36 @@ rule metag_gather:
         sourmash gather {input.query} {input.db} -k {wildcards.k} \
             --picklist {input.fastgather_out}:match_md5:md5 \
             -o {output.csv} > {output.out}
+    """
+
+rule prepare_taxdb:
+    input:
+        config['taxonomies']
+    output:
+        "interim/tax.sqldb"
+    shell: """
+        sourmash tax prepare -t {input} -o {output} -F sql
+    """
+
+rule metag_tax:
+    input:
+        gather_csv = "outputs/metag_gather/{name}.{k}.gather.csv",
+        taxdb = "interim/tax.sqldb",
+    output:
+        "outputs/metag_gather/{name}.{k}.kreport.out",
+    shell: """
+        sourmash tax metagenome -F kreport -g {input.gather_csv} \
+            -t {input.taxdb} > {output}
+    """
+
+rule metag_tax_summary:
+    input:
+        expand("outputs/metag_gather/{n}.{{k}}.kreport.out",
+               n=METAGENOME_NAMES),
+    output:
+        "outputs/metag_gather/metag.{k}.kreport.csv"
+    shell: """
+        scripts/combine-kreports.py {input} -o {output}
     """
 
 rule list_genomes:
