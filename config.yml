@@ -1,0 +1,11 @@
+metagenomes:
+- data/metagenomes/metag*.fa.gz
+
+genomes:
+- data/genomes/*.fa.gz
+
+databases:
+- ../sourmash/podar-ref.zip
+
+taxonomies:
+- ../sourmash//podar-ref/podar-lineage.csv

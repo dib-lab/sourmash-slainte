@@ -1,0 +1,11 @@
+name: slainte
+channels:
+ - conda-forge
+ - defaults
+dependencies:
+ - mamba
+ - snakemake-minimal
+ - pandas>1,<3
+ - python
+ - sourmash>=4.8.5
+ - sourmash_plugin_branchwater>=0.8.5
