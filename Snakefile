@@ -19,11 +19,9 @@ def strip_suffix(x):
 
 KSIZES = [21, 31, 51]
 GATHER_KSIZE = 21
-METAGENOME_FILE_PATTERN = config['metagenomes']
-GENOME_FILE_PATTERN = config['genomes']
 
 GENOME_NAMES = {}
-for g in GENOME_FILE_PATTERN:
+for g in config['genomes']:
     files = glob.glob(g)
     for filename in files:
         name = strip_suffix(filename)
@@ -33,7 +31,7 @@ for g in GENOME_FILE_PATTERN:
 print(f"Found {len(GENOME_NAMES)} genome files.")
 
 METAGENOME_NAMES={}
-for g in METAGENOME_FILE_PATTERN:
+for g in config['metagenomes']:
     files = glob.glob(g)
     for filename in files:
         name = strip_suffix(filename)
@@ -50,6 +48,7 @@ rule all:
         expand("outputs/metag_compare.{k}.abund.matrix.png", k=KSIZES),
         expand("outputs/metag_compare.{k}.flat.matrix.png", k=KSIZES),
         expand("outputs/genome_compare.{k}.ani.matrix.png", k=KSIZES),
+        expand("outputs/metag.x.genomes.{k}.png", k=KSIZES),
         expand("outputs/metag_gather/{n}.{k}.gather.txt",
                n=METAGENOME_NAMES, k=GATHER_KSIZE),
         expand("outputs/metag_gather/{n}.{k}.gather.csv",
@@ -66,7 +65,7 @@ rule sketch_genome:
     shell: """
         sourmash sketch dna {input:q} -o {output:q} \
            -p k=21,k=31,k=51,scaled=1000 \
-           --name {name:q}
+           --name {wildcards.name:q}
     """
 
 
@@ -81,7 +80,7 @@ rule sketch_metag:
     shell: """
         sourmash sketch dna {input:q} -o {output:q} \
            -p abund,k=21,k=31,k=51,scaled=1000 \
-           --name {name:q}
+           --name {wildcards.name:q}
     """
 
 rule make_metagenome_compare_abund:
@@ -144,11 +143,11 @@ rule list_databases:
         find {input} -name "*.sig.gz" > {output}
     """
 
-rule metag_extract_sketch:
+rule extract_sketch:
     input:
-        "sketches/metag/{name}.sig.zip",
+        "sketches/{dir}/{name}.sig.zip",
     output:
-        "sketches/metag/{name}.{k}.sig.gz",
+        "sketches/{dir}/{name}.{k}.sig.gz",
     shell: """
         sourmash sig cat {input} -o {output} -k {wildcards.k}
     """
@@ -176,4 +175,54 @@ rule metag_gather:
         sourmash gather {input.query} {input.db} -k {wildcards.k} \
             --picklist {input.fastgather_out}:match_md5:md5 \
             -o {output.csv} > {output.out}
+    """
+
+rule list_genomes:
+    input:
+        expand("sketches/genomes/{n}.{{k}}.sig.gz", n=GENOME_NAMES),
+    output:
+        "interim/list.genome-sketches.{k}.txt"
+    shell: """
+        ls -1 {input} > {output}
+    """
+
+rule list_metag:
+    input:
+        expand("sketches/metag/{n}.{{k}}.sig.gz", n=METAGENOME_NAMES),
+    output:
+        "interim/list.metag-sketches.{k}.txt"
+    shell: """
+        ls -1 {input} > {output}
+    """
+
+rule metag_x_genomes_csv:
+    input:
+        metag="interim/list.metag-sketches.{k}.txt",
+        genomes="interim/list.genome-sketches.{k}.txt",
+    output:
+        "outputs/metag.x.genomes.{k}.manysearch.csv"
+    threads: 64
+    shell: """
+        sourmash scripts manysearch -k {wildcards.k} \
+            {input.genomes} {input.metag} \
+            -c {threads} -t 0 \
+            -o {output}
+    """
+
+rule summarize_manysearch:
+    input:
+        "outputs/metag.x.genomes.{k}.manysearch.csv"
+    output:
+        "outputs/metag.x.genomes.{k}.summary.csv"
+    shell: """
+        scripts/summarize-manysearch.py {input} -o {output}
+    """
+
+rule plot_manysearch:
+    input:
+        "outputs/metag.x.genomes.{k}.summary.csv"
+    output:
+        "outputs/metag.x.genomes.{k}.png"
+    shell: """
+        scripts/plot-genome-vs-metag.py {input} -o {output}
     """
