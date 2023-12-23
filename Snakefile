@@ -16,6 +16,7 @@ def strip_suffix(x):
     print(x, basename)
     return basename
 
+KSIZES = [21, 31, 51]
 METAGENOME_FILE_PATTERN = config['metagenomes']
 GENOME_FILE_PATTERN = config['genomes']
 
@@ -44,7 +45,9 @@ rule all:
     input:
         expand("sketches/metag/{n}.sig.zip", n=METAGENOME_NAMES),
         expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
-
+        expand("outputs/metag_compare.{k}.abund.matrix.pdf", k=KSIZES),
+        expand("outputs/metag_compare.{k}.flat.matrix.pdf", k=KSIZES),
+        expand("outputs/genome_compare.{k}.ani.matrix.pdf", k=KSIZES),
 
 def genome_inp(wc):
     return GENOME_NAMES[wc.name]
@@ -71,4 +74,45 @@ rule sketch_metag:
     shell: """
         sourmash sketch dna {input} -o {output} \
            -p abund,k=21,k=31,k=51,scaled=1000
+    """
+
+rule make_metagenome_compare_abund:
+    input:
+        expand("sketches/metag/{n}.sig.zip", n=METAGENOME_NAMES),
+    output:
+        cmp="outputs/metag_compare.{k}.abund",
+        labels="outputs/metag_compare.{k}.abund.labels.txt"
+    shell: """
+        sourmash compare {input} -o {output.cmp} -k {wildcards.k}
+    """
+
+rule make_metagenome_compare_flat:
+    input:
+        expand("sketches/metag/{n}.sig.zip", n=METAGENOME_NAMES),
+    output:
+        cmp="outputs/metag_compare.{k}.flat",
+        labels="outputs/metag_compare.{k}.flat.labels.txt"
+    shell: """
+        sourmash compare {input} -o {output.cmp} -k {wildcards.k} \
+            --ignore-abund
+    """
+
+rule make_genome_compare_ani:
+    input:
+        expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
+    output:
+        cmp="outputs/genome_compare.{k}.ani",
+        labels="outputs/genome_compare.{k}.ani.labels.txt"
+    shell: """
+        sourmash compare {input} -o {output.cmp} -k {wildcards.k} \
+            --containment --ani
+    """
+
+rule make_matrix_pdf:
+    input:
+        "outputs/{cmp}",
+    output:
+        "outputs/{cmp}.matrix.pdf"
+    shell: """
+        sourmash plot {input} --pdf --output-dir=outputs/
     """
