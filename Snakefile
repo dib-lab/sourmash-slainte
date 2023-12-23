@@ -3,7 +3,8 @@ import glob, os
 configfile: "config.yml"
 
 wildcard_constraints:
-    name='[^./]+'
+    name='[^./]+',
+    k = "\d+",
 
 def strip_suffix(x):
     basename = os.path.basename(x)
@@ -17,6 +18,7 @@ def strip_suffix(x):
     return basename
 
 KSIZES = [21, 31, 51]
+GATHER_KSIZE = 21
 METAGENOME_FILE_PATTERN = config['metagenomes']
 GENOME_FILE_PATTERN = config['genomes']
 
@@ -48,6 +50,10 @@ rule all:
         expand("outputs/metag_compare.{k}.abund.matrix.pdf", k=KSIZES),
         expand("outputs/metag_compare.{k}.flat.matrix.pdf", k=KSIZES),
         expand("outputs/genome_compare.{k}.ani.matrix.pdf", k=KSIZES),
+        expand("outputs/metag_gather/{n}.{k}.gather.txt",
+               n=METAGENOME_NAMES, k=GATHER_KSIZE),
+        expand("outputs/metag_gather/{n}.{k}.gather.csv",
+               n=METAGENOME_NAMES, k=GATHER_KSIZE),
 
 def genome_inp(wc):
     return GENOME_NAMES[wc.name]
@@ -115,4 +121,57 @@ rule make_matrix_pdf:
         "outputs/{cmp}.matrix.pdf"
     shell: """
         sourmash plot {input} --pdf --output-dir=outputs/
+    """
+
+rule unpack_database:
+    input:
+        config['databases']
+    output:
+        directory(config.get('database_sketches_dir', 'interim/database_sketches.d'))
+    shell: """
+        sourmash sig split {input} --outdir {output} -E .sig.gz \
+            -k {GATHER_KSIZE}
+    """
+        
+rule list_databases:
+    input:
+        config.get('database_sketches_dir', 'interim/database_sketches.d')
+    output:
+        "interim/list.database-sketches.txt"
+    shell: """
+        find {input} -name "*.sig.gz" > {output}
+    """
+
+rule metag_extract_sketch:
+    input:
+        "sketches/metag/{name}.sig.zip",
+    output:
+        "sketches/metag/{name}.{k}.sig.gz",
+    shell: """
+        sourmash sig cat {input} -o {output} -k {wildcards.k}
+    """
+
+rule metag_fastgather:
+    input:
+        query="sketches/metag/{name}.{k}.sig.gz",
+        db="interim/list.database-sketches.txt"
+    output:
+        "outputs/metag_gather/{name}.{k}.fastgather.csv",
+    shell: """
+        sourmash scripts fastgather {input.query} {input.db} -o {output} \
+           -k {wildcards.k}
+    """
+
+rule metag_gather:
+    input:
+        query = "sketches/metag/{name}.sig.zip",
+        db = config['databases'],
+        fastgather_out = "outputs/metag_gather/{name}.{k}.fastgather.csv",
+    output:
+        csv=touch("outputs/metag_gather/{name}.{k}.gather.csv"),
+        out="outputs/metag_gather/{name}.{k}.gather.txt",
+    shell: """
+        sourmash gather {input.query} {input.db} -k {wildcards.k} \
+            --picklist {input.fastgather_out}:match_md5:md5 \
+            -o {output.csv} > {output.out}
     """

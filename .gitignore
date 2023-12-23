@@ -3,6 +3,7 @@
 sketches/
 outputs/
 .DS_Store
+interim/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
