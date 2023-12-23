@@ -51,6 +51,8 @@ def main():
 
     print(join_df.head())
 
+    join_df.set_index('name', inplace=True)
+
     # save!
     join_df.to_csv(args.output)
 
