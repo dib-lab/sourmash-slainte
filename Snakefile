@@ -47,9 +47,9 @@ rule all:
     input:
         expand("sketches/metag/{n}.sig.zip", n=METAGENOME_NAMES),
         expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
-        expand("outputs/metag_compare.{k}.abund.matrix.pdf", k=KSIZES),
-        expand("outputs/metag_compare.{k}.flat.matrix.pdf", k=KSIZES),
-        expand("outputs/genome_compare.{k}.ani.matrix.pdf", k=KSIZES),
+        expand("outputs/metag_compare.{k}.abund.matrix.png", k=KSIZES),
+        expand("outputs/metag_compare.{k}.flat.matrix.png", k=KSIZES),
+        expand("outputs/genome_compare.{k}.ani.matrix.png", k=KSIZES),
         expand("outputs/metag_gather/{n}.{k}.gather.txt",
                n=METAGENOME_NAMES, k=GATHER_KSIZE),
         expand("outputs/metag_gather/{n}.{k}.gather.csv",
@@ -64,8 +64,9 @@ rule sketch_genome:
     output:
         "sketches/genomes/{name}.sig.zip"
     shell: """
-        sourmash sketch dna {input} -o {output} \
-           -p k=21,k=31,k=51,scaled=1000
+        sourmash sketch dna {input:q} -o {output:q} \
+           -p k=21,k=31,k=51,scaled=1000 \
+           --name {name:q}
     """
 
 
@@ -78,8 +79,9 @@ rule sketch_metag:
     output:
         "sketches/metag/{name}.sig.zip"
     shell: """
-        sourmash sketch dna {input} -o {output} \
-           -p abund,k=21,k=31,k=51,scaled=1000
+        sourmash sketch dna {input:q} -o {output:q} \
+           -p abund,k=21,k=31,k=51,scaled=1000 \
+           --name {name:q}
     """
 
 rule make_metagenome_compare_abund:
@@ -118,9 +120,9 @@ rule make_matrix_pdf:
     input:
         "outputs/{cmp}",
     output:
-        "outputs/{cmp}.matrix.pdf"
+        "outputs/{cmp}.matrix.png"
     shell: """
-        sourmash plot {input} --pdf --output-dir=outputs/
+        sourmash plot {input} --output-dir=outputs/
     """
 
 rule unpack_database:
