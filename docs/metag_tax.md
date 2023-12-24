@@ -1,4 +1,4 @@
-# Metagome taxonomic summary
+# Metagenome taxonomic summary
 
 {{ read_csv('outputs/metag_gather/metag.21.kreport.csv') }}
 
