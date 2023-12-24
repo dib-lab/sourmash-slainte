@@ -1,4 +1,4 @@
-import glob, os
+import glob, os, csv
 from collections import defaultdict
 
 configfile: "config.yml"
@@ -31,13 +31,20 @@ for g in config['genomes']:
 
 print(f"Found {len(GENOME_NAMES)} genome files.")
 
+METAG_PATH=config['metagenome_dir']
 METAGENOME_NAMES=defaultdict(set)
-for g in config['metagenomes']:
-    files = glob.glob(g)
-    for filename in files:
-        name = strip_suffix(filename)
-        assert name not in METAGENOME_NAMES, f"duplicate prefix for {filename}"
-        METAGENOME_NAMES[name].add(filename)
+with open(config['sample_info'], 'r', newline='') as sample_fp:
+    r = csv.DictReader(sample_fp)
+
+    for row in r:
+        fileglob = METAG_PATH.rstrip('/') + '/' + row['prefix'] + '*'
+        name = row['name']
+
+        files = glob.glob(fileglob)
+        print('F', name, fileglob, files)
+        assert files, fileglob
+
+        METAGENOME_NAMES[name].update(files)
 
 print(f"Found {len(METAGENOME_NAMES)} metagenome names.")
 
