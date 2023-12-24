@@ -1,4 +1,5 @@
-import glob, os
+import glob, os, csv
+from collections import defaultdict
 
 configfile: "config.yml"
 
@@ -30,15 +31,22 @@ for g in config['genomes']:
 
 print(f"Found {len(GENOME_NAMES)} genome files.")
 
-METAGENOME_NAMES={}
-for g in config['metagenomes']:
-    files = glob.glob(g)
-    for filename in files:
-        name = strip_suffix(filename)
-        assert name not in METAGENOME_NAMES, f"duplicate prefix for {filename}"
-        METAGENOME_NAMES[name] = filename
+METAG_PATH=config['metagenome_dir']
+METAGENOME_NAMES=defaultdict(set)
+with open(config['sample_info'], 'r', newline='') as sample_fp:
+    r = csv.DictReader(sample_fp)
 
-print(f"Found {len(METAGENOME_NAMES)} metagenome files.")
+    for row in r:
+        fileglob = METAG_PATH.rstrip('/') + '/' + row['prefix'] + '*'
+        name = row['name']
+
+        files = glob.glob(fileglob)
+        print('F', name, fileglob, files)
+        assert files, fileglob
+
+        METAGENOME_NAMES[name].update(files)
+
+print(f"Found {len(METAGENOME_NAMES)} metagenome names.")
 
 
 rule all:
@@ -57,6 +65,11 @@ rule all:
                n=METAGENOME_NAMES, k=GATHER_KSIZE),
         expand("outputs/metag_gather/metag.{k}.kreport.csv", k=GATHER_KSIZE),
 
+rule sketch:
+    input:
+        expand("sketches/metag/{n}.sig.zip", n=METAGENOME_NAMES),
+        expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
+
 def genome_inp(wc):
     return GENOME_NAMES[wc.name]
 
@@ -73,7 +86,7 @@ rule sketch_genome:
 
 
 def metag_inp(wc):
-    return METAGENOME_NAMES[wc.name]
+    return list(METAGENOME_NAMES[wc.name])
 
 rule sketch_metag:
     input:
