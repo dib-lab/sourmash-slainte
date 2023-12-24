@@ -15,7 +15,6 @@ def strip_suffix(x):
             basename = prefix
         else:
             break
-    print(x, basename)
     return basename
 
 KSIZES = [21, 31, 51]
@@ -30,6 +29,11 @@ for g in config['genomes']:
         GENOME_NAMES[name] = filename
 
 print(f"Found {len(GENOME_NAMES)} genome files.")
+if len(GENOME_NAMES) > 0:
+    ENABLE_GENOMES = True
+else:
+    print('** NOTE: no genome files found. Disabling genome output!')
+    ENABLE_GENOMES = False
 
 METAG_PATH=config['metagenome_dir']
 METAGENOME_NAMES=defaultdict(set)
@@ -49,14 +53,19 @@ with open(config['sample_info'], 'r', newline='') as sample_fp:
 print(f"Found {len(METAGENOME_NAMES)} metagenome names.")
 
 
+genome_outputs = []
+if ENABLE_GENOMES:
+    genome_outputs.append(
+        expand("outputs/genome_compare.{k}.ani.matrix.png", k=KSIZES),
+        expand("outputs/metag.x.genomes.{k}.png", k=KSIZES),
+        )
+
 rule all:
     input:
         expand("sketches/metag/{n}.sig.zip", n=METAGENOME_NAMES),
         expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
         expand("outputs/metag_compare.{k}.abund.matrix.png", k=KSIZES),
         expand("outputs/metag_compare.{k}.flat.matrix.png", k=KSIZES),
-        expand("outputs/genome_compare.{k}.ani.matrix.png", k=KSIZES),
-        expand("outputs/metag.x.genomes.{k}.png", k=KSIZES),
         expand("outputs/metag_gather/{n}.{k}.gather.txt",
                n=METAGENOME_NAMES, k=GATHER_KSIZE),
         expand("outputs/metag_gather/{n}.{k}.gather.csv",
@@ -64,6 +73,7 @@ rule all:
         expand("outputs/metag_gather/{n}.{k}.kreport.out",
                n=METAGENOME_NAMES, k=GATHER_KSIZE),
         expand("outputs/metag_gather/metag.{k}.kreport.csv", k=GATHER_KSIZE),
+        genome_outputs
 
 rule sketch:
     input:
@@ -228,9 +238,9 @@ rule list_genomes:
         expand("sketches/genomes/{n}.{{k}}.sig.gz", n=GENOME_NAMES),
     output:
         "interim/list.genome-sketches.{k}.txt"
-    shell: """
-        ls -1 {input} > {output}
-    """
+    run:
+        with open(output[0], 'wt') as outfp:
+            outfp.write("\n".join(input))
 
 rule list_metag:
     input:
