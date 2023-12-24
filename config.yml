@@ -8,4 +8,4 @@ databases:
 - ../sourmash/podar-ref.zip
 
 taxonomies:
-- ../sourmash//podar-ref/podar-lineage.csv
+- ../sourmash/podar-ref/podar-lineage.csv
