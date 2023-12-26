@@ -4,6 +4,9 @@ all:
 sketch:
 	snakemake -j 4 -k sketch
 
+cleanall:
+	rm -fr sketches outputs
+
 html:
 	mkdocs build
 
