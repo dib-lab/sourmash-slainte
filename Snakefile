@@ -184,9 +184,10 @@ rule metag_fastgather:
         db="interim/list.database-sketches.txt"
     output:
         "outputs/metag_gather/{name}.{k}.fastgather.csv",
+    threads: 64
     shell: """
         sourmash scripts fastgather {input.query} {input.db} -o {output} \
-           -k {wildcards.k}
+           -k {wildcards.k} -c {threads}
     """
 
 rule metag_gather:
@@ -197,6 +198,8 @@ rule metag_gather:
     output:
         csv=touch("outputs/metag_gather/{name}.{k}.gather.csv"),
         out="outputs/metag_gather/{name}.{k}.gather.txt",
+    resources:
+        gather=1
     shell: """
         sourmash gather {input.query} {input.db} -k {wildcards.k} \
             --picklist {input.fastgather_out}:match_md5:md5 \
@@ -257,12 +260,12 @@ rule metag_x_genomes_csv:
         genomes="interim/list.genome-sketches.{k}.txt",
     output:
         "outputs/metag.x.genomes.{k}.manysearch.csv"
-    threads: 64
+    threads: 8
     shell: """
         sourmash scripts manysearch -k {wildcards.k} \
             {input.genomes} {input.metag} \
             -c {threads} -t 0 \
-            -o {output}
+            -o {output} -c {threads}
     """
 
 rule summarize_manysearch:
