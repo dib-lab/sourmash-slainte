@@ -15,4 +15,4 @@ using [sourmash](https://sourmash.readthedocs.io/). K-mers FTW!
 
 ---
 
-[Config / macros information](macros_info.md)
+<!-- [Config / macros information](macros_info.md) -->
