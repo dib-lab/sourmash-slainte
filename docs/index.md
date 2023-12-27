@@ -5,7 +5,7 @@ using [sourmash](https://sourmash.readthedocs.io/). K-mers FTW!
 
 [Metagenome comparisons](metag_compare.md)
 
-{% if display_genomes or 1 %}
+{% if display_genomes %}
 [Genome comparisons](genome_compare.md)
 
 [Metagenomes against genomes](metag_x_genomes.md)
