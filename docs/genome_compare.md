@@ -1,5 +1,7 @@
 # Genome comparisons
 
+{% if display_genomes %}
+
 ## ANI comparison between genomes
 
 ### k=21
@@ -13,3 +15,9 @@
 ### k=51
 
 [![](outputs/genome_compare.51.ani.matrix.png)](outputs/genome_compare.51.ani.matrix.png)
+
+{% else %}
+
+(No individual query genomes provided, so there's nothing to show.)
+
+{% endif %}

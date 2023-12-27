@@ -1,5 +1,7 @@
 # Metagenomes vs genomes
 
+{% if display_genomes %}
+
 ## Jaccard containment of genomes in metagenomes (no abundance)
 
 ### k=21
@@ -28,3 +30,9 @@ Files:
 
 * [manysearch output](outputs/metag.x.genomes.51.manysearch.csv)
 * [summary matrix output](outputs/metag.x.genomes.51.summary.csv)
+
+{% else %}
+
+(No individual query genomes provided, so there's nothing to show.)
+
+{% endif %}

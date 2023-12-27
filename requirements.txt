@@ -2,3 +2,4 @@ mkdocs-table-reader-plugin
 pymdown-extensions
 mkdocs-material
 mkdocs-material-extensions
+mkdocs-macros-plugin

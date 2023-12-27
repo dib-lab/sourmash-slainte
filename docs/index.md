@@ -5,8 +5,14 @@ using [sourmash](https://sourmash.readthedocs.io/). K-mers FTW!
 
 [Metagenome comparisons](metag_compare.md)
 
+{% if display_genomes or 1 %}
 [Genome comparisons](genome_compare.md)
 
 [Metagenomes against genomes](metag_x_genomes.md)
+{% endif %}
 
 [Metagenome taxonomy summary](metag_tax.md)
+
+---
+
+[Config / macros information](macros_info.md)

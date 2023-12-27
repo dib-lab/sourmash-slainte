@@ -6,7 +6,9 @@ theme:
 plugins:
 - search
 - table-reader
-
+- macros:
+     include_yaml:
+       - config.yml
 markdown_extensions:
 - admonition
 - pymdownx.details
