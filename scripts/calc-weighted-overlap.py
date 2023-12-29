@@ -91,15 +91,15 @@ def main():
                 f_sum_abunds = overlap_sum_abunds / total_sum_abunds
             else:
                 mean = median = std = 0
-                overlap_sum_Abunds = 0
+                overlap_sum_abunds = 0
                 f_sum_abunds = 0
 
             results_d = dict(intersect_bp=len(intersect_mh),
                              query_filename=q.filename,
                              query_name=q.name,
                              query_md5=q.md5sum(),
-                             f_unique_weighted=0, # @CTB
-                             n_unique_weighted_found=0, # @CTB
+                             f_unique_weighted=f_sum_abunds,
+                             n_unique_weighted_found=overlap_sum_abunds,
                              sum_weighted_found=overlap_sum_abunds,
                              total_weighted_hashes=total_sum_abunds,
                              average_abund=mean,

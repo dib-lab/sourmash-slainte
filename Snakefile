@@ -62,8 +62,8 @@ if ENABLE_GENOMES:
         expand("outputs/metag.x.genomes.{k}.png", k=KSIZES),
         )
     genome_outputs.extend(
-        expand("outputs/prefetch/{n}.x.genomes.{k}.csv",
-               n=METAGENOME_NAMES, k=GATHER_KSIZE),
+        expand("outputs/prefetch/all_metag.x.genomes.{k}.summary.csv",
+               k=GATHER_KSIZE),
         )
 
 rule all:
@@ -304,4 +304,15 @@ rule metag_x_genomes_prefetch:
     shell: """
         {input.bin} -k {wildcards.k} --genomes {input.genomes} \
             --metagenomes {input.metag} -o {output}
+    """
+
+rule metag_x_genomes_prefetch_summary:
+    input:
+        csv=expand("outputs/prefetch/{metag}.x.genomes.{k}.csv",
+               metag=METAGENOME_NAMES, k=GATHER_KSIZE),
+        bin="scripts/summarize-weighted-overlap.py",
+    output:
+        "outputs/prefetch/all_metag.x.genomes.{k}.summary.csv",
+    shell: """
+        {input.bin} {input.csv} -o {output}
     """
