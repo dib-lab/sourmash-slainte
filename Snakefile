@@ -55,8 +55,10 @@ print(f"Found {len(METAGENOME_NAMES)} metagenome names.")
 
 genome_outputs = []
 if ENABLE_GENOMES:
-    genome_outputs.append(
-        expand("outputs/genome_compare.{k}.ani.matrix.png", k=KSIZES),
+    genome_outputs.extend(
+        expand("outputs/genome_compare.{k}.ani.matrix.png", k=KSIZES)
+        )
+    genome_outputs.extend(
         expand("outputs/metag.x.genomes.{k}.png", k=KSIZES),
         )
 
