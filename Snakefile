@@ -61,6 +61,10 @@ if ENABLE_GENOMES:
     genome_outputs.extend(
         expand("outputs/metag.x.genomes.{k}.png", k=KSIZES),
         )
+    genome_outputs.extend(
+        expand("outputs/prefetch/{n}.x.genomes.{k}.csv",
+               n=METAGENOME_NAMES, k=GATHER_KSIZE),
+        )
 
 rule all:
     input:
@@ -75,7 +79,8 @@ rule all:
         expand("outputs/metag_gather/{n}.{k}.kreport.out",
                n=METAGENOME_NAMES, k=GATHER_KSIZE),
         expand("outputs/metag_gather/metag.{k}.kreport.csv", k=GATHER_KSIZE),
-        genome_outputs
+        genome_outputs,
+
 
 rule sketch:
     input:
@@ -267,7 +272,7 @@ rule metag_x_genomes_csv:
         sourmash scripts manysearch -k {wildcards.k} \
             {input.genomes} {input.metag} \
             -c {threads} -t 0 \
-            -o {output} -c {threads}
+            -o {output}
     """
 
 rule summarize_manysearch:
@@ -286,4 +291,17 @@ rule plot_manysearch:
         "outputs/metag.x.genomes.{k}.png"
     shell: """
         scripts/plot-genome-vs-metag.py {input} -o {output}
+    """
+
+rule metag_x_genomes_prefetch:
+    input:
+        genomes = expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
+        metag="sketches/metag/{metag}.sig.zip",
+        bin = "scripts/calc-weighted-overlap.py",
+    output:
+        "outputs/prefetch/{metag}.x.genomes.{k}.csv",
+    threads: 1
+    shell: """
+        {input.bin} -k {wildcards.k} --genomes {input.genomes} \
+            --metagenomes {input.metag} -o {output}
     """
