@@ -31,7 +31,7 @@ def main():
     sample_dfs = {}
     for sample in samples:
         sample_df = df[df['match_name'] == sample]
-        sample_df = sample_df[['query_name', 'median_abund']]
+        sample_df = sample_df[['query_name', 'f_unique_weighted']]
         sample_dfs[sample] = sample_df
 
     # go through and merge, retaining the column named `containment`;
@@ -40,14 +40,14 @@ def main():
     # do the first sample:
     sample = samples.pop(0)
     combined_df = sample_dfs[sample]
-    combined_df.rename(columns={'median_abund': sample}, inplace=True)
+    combined_df.rename(columns={'f_unique_weighted': sample}, inplace=True)
 
     # and then... the rest!
     while samples:
         sample = samples.pop(0)
         sample_df = sample_dfs[sample]
-        sample_df = sample_df[['query_name', 'median_abund']]
-        sample_df.rename(columns={'median_abund': sample},
+        sample_df = sample_df[['query_name', 'f_unique_weighted']]
+        sample_df.rename(columns={'f_unique_weighted': sample},
                          inplace=True)
         combined_df = combined_df.merge(sample_df, on='query_name',
                                         how='outer')
