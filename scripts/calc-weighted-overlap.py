@@ -28,6 +28,8 @@ def main():
 
     assert all( (not q.minhash.track_abundance for q in queries) )
 
+    print(f"Loaded {len(queries)} query genomes.")
+
     columns = ['intersect_bp',
                'match_filename',
                'match_name',
@@ -52,6 +54,7 @@ def main():
 
     # go through metagenomes one by one
     for metag_filename in args.metagenomes:
+        print(f"working on metagenome: {metag_filename}")
         metag = sourmash.load_file_as_signatures(metag_filename,
                                                  ksize=args.ksize)
         metag = list(metag)
