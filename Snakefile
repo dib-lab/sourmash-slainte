@@ -62,7 +62,7 @@ if ENABLE_GENOMES:
         expand("outputs/metag.x.genomes.{k}.png", k=KSIZES),
         )
     genome_outputs.extend(
-        expand("outputs/prefetch/all_metag.x.genomes.{k}.summary.csv",
+        expand("outputs/prefetch/all_metag.x.genomes.{k}.summary.png",
                k=GATHER_KSIZE),
         )
 
@@ -315,4 +315,13 @@ rule metag_x_genomes_prefetch_summary:
         "outputs/prefetch/all_metag.x.genomes.{k}.summary.csv",
     shell: """
         {input.bin} {input.csv} -o {output}
+    """
+
+rule plot_prefetch_summary:
+    input:
+        "outputs/prefetch/all_metag.x.genomes.{k}.summary.csv"
+    output:
+        "outputs/prefetch/all_metag.x.genomes.{k}.summary.png"
+    shell: """
+        scripts/plot-genome-vs-metag.py {input} -o {output}
     """
