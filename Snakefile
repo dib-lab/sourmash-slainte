@@ -37,6 +37,7 @@ else:
 
 METAG_PATH=config['metagenome_dir']
 METAGENOME_NAMES=defaultdict(set)
+METAGENOME_FILES=dict()
 with open(config['sample_info'], 'r', newline='') as sample_fp:
     r = csv.DictReader(sample_fp)
 
@@ -49,6 +50,12 @@ with open(config['sample_info'], 'r', newline='') as sample_fp:
         assert files, fileglob
 
         METAGENOME_NAMES[name].update(files)
+
+        for filename in files:
+            print('xxx', filename)
+            individual_name = strip_suffix(filename)
+            assert individual_name not in METAGENOME_FILES, individual_name
+            METAGENOME_FILES[individual_name] = filename
 
 print(f"Found {len(METAGENOME_NAMES)} metagenome names.")
 
@@ -69,6 +76,8 @@ if ENABLE_GENOMES:
 rule all:
     input:
         expand("sketches/metag/{n}.sig.zip", n=METAGENOME_NAMES),
+        expand("sketches/metag/individual_sketches/{f}.sig.zip",
+               f=METAGENOME_FILES),
         expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
         expand("outputs/metag_compare.{k}.abund.matrix.png", k=KSIZES),
         expand("outputs/metag_compare.{k}.flat.matrix.png", k=KSIZES),
@@ -114,6 +123,22 @@ rule sketch_metag:
         sourmash sketch dna {input:q} -o {output:q} \
            -p abund,k=21,k=31,k=51,scaled=1000 \
            --name {wildcards.name:q}
+    """
+
+def metag_individual_inp(wc):
+    return METAGENOME_FILES[wc.name]
+
+rule sketch_metag_individual_data_file:
+    input:
+        metag_individual_inp
+    output:
+        "sketches/metag/individual_sketches/{name}.sig.zip",
+    shell: """
+        echo name,genome_filename,protein_filename > {output:q}.manysketch.csv
+        echo {wildcards.name},{input:q}, >> {output:q}.manysketch.csv
+        sourmash scripts manysketch {output:q}.manysketch.csv -o {output:q} \
+           -p k=21,k=31,k=51,scaled=1000
+
     """
 
 rule make_metagenome_compare_abund:
