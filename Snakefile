@@ -5,7 +5,7 @@ configfile: "config.yml"
 
 wildcard_constraints:
     name='[^./]+',
-    k = "\d+",
+    k = "\\d+",
 
 def strip_suffix(x):
     basename = os.path.basename(x)
