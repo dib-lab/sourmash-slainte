@@ -11,7 +11,7 @@ def strip_suffix(x):
     basename = os.path.basename(x)
     while 1:
         prefix, suffix = os.path.splitext(basename)
-        if suffix in ('.fa', '.fasta', '.fq', '.fastq', '.gz', '.bz2'):
+        if suffix in ('.fa', '.fna', '.fasta', '.fq', '.fastq', '.gz', '.bz2'):
             basename = prefix
         else:
             break
