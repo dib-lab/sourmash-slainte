@@ -19,4 +19,19 @@ using [sourmash](https://sourmash.readthedocs.io/).
 
 ---
 
-## [Sample information](metag_sample_check.md)
+## Databases and taxonomy
+
+Search databases used for `sourmash gather`:
+{% for db in databases %}
+* {{ db }}
+{% endfor %}
+
+Taxonomy used for `sourmash tax metagenome`:
+{% for tax in taxonomies %}
+* {{ tax }}
+{% endfor %}
+
+## Sample information
+
+See the [sample x datafile](metag_sample_check.md) comparison for
+which samples contain which data.
