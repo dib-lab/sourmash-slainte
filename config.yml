@@ -6,6 +6,8 @@ display_genomes: True # for mkdocs, temporarily...
 genomes:
 - data/genomes/*.fa.gz
 
+run_gather: True
+
 databases:
 - ../sourmash/podar-ref.zip
 

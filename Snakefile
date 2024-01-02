@@ -1,5 +1,5 @@
-import glob, os, csv
-from collections import defaultdict
+# import utility functions:
+from slainte_functions import *
 
 configfile: "config.yml"
 
@@ -7,23 +7,13 @@ wildcard_constraints:
     name='[^./]+',              # for 'name', don't recurse into subdirectories
     k = "\\d+",                 # for k-mer sizes, allow numbers only
 
-def strip_suffix(x):
-    "Remove standard DNA file suffixes to get the filename"
-    basename = os.path.basename(x)
-    while 1:
-        prefix, suffix = os.path.splitext(basename)
-        if suffix in ('.fa', '.fna', '.fasta', '.fq', '.fastq', '.gz', '.bz2'):
-            basename = prefix
-        else:
-            break
-    return basename
-
 # k-mer sizes to sketch:
 KSIZES = [21, 31, 51]
 
-# param string - k-sizes should match above
-sketch_params = "k=21,k=31,k=51,scaled=1000"
-sketch_params_abund = "k=21,k=31,k=51,scaled=1000,abund"
+# param strings for sketching
+k_params = ",".join(expand("k={k}", k=KSIZES))
+genome_sketch_params = "scaled=1000," + k_params
+metag_sketch_params = "scaled=1000,abund," + k_params
 
 # k-mer sizes for running gather:
 GATHER_KSIZE = 21
@@ -32,62 +22,60 @@ GATHER_KSIZE = 21
 # collect all genome files.
 #
 
-GENOME_NAMES = {}
-for g in config['genomes']:
-    files = glob.glob(g)
-    for filename in files:
-        name = strip_suffix(filename)
-        assert name not in GENOME_NAMES, f"duplicate prefix for {filename}"
-        GENOME_NAMES[name] = filename
+GENOME_NAMES = collect_genomes(config['genomes'])
 
-print(f"Found {len(GENOME_NAMES)} genome files.")
-if len(GENOME_NAMES) > 0:
+if len(GENOME_NAMES) > 0 and config['display_genomes']:
     ENABLE_GENOMES = True
 else:
-    print('** NOTE: no genome files found. Disabling genome output!')
+    print('** NOTE: no genome files found OR display_genomes is False. Disabling genome output!')
     ENABLE_GENOMES = False
 
 #
 # collect all metagenome files, based on contents of sample_info CSV file.
 #
 
-METAG_PATH=config['metagenome_dir']
-METAGENOME_NAMES=defaultdict(set)
-METAGENOME_FILES=dict()
-with open(config['sample_info'], 'r', newline='') as sample_fp:
-    r = csv.DictReader(sample_fp)
+metag_path = config['metagenome_dir']
+samples_csv = config['sample_info']
+METAGENOME_NAMES, METAGENOME_FILES = load_metagenome_files(metag_path,
+                                                           samples_csv,
+                                                           debug=True)
 
-    for row in r:
-        # use the 'prefix' column as the prefix for a wildcard
-        fileglob = METAG_PATH.rstrip('/') + '/' + row['prefix'] + '*'
-        name = row['name']
+print(f"Found {len(METAGENOME_NAMES)} samples total!")
 
-        files = glob.glob(fileglob)
-        print(f"for metagenome '{name}', wildcard '{fileglob}' matches: {files}")
-        assert files, fileglob
+#
+# configure - run gather?
+#
 
-        METAGENOME_NAMES[name].update(files)
+if config['run_gather']:
+    RUN_GATHER = True
+else:
+    print('** NOTE: run_gather is False. Disabling gather output!')
+    RUN_GATHER = False
 
-        for filename in files:
-            print('xxx', filename)
-            individual_name = strip_suffix(filename)
-            assert individual_name not in METAGENOME_FILES, individual_name
-            METAGENOME_FILES[individual_name] = filename
+#####
+##### all configuration decisions made! now, make it so.
+#####
 
-print(f"Found {len(METAGENOME_NAMES)} metagenome names.")
-
-
-genome_outputs = []
+extra_outputs = []
 if ENABLE_GENOMES:
-    genome_outputs.extend(
+    extra_outputs.extend(
         expand("outputs/genome_compare.{k}.ani.matrix.png", k=KSIZES)
         )
-    genome_outputs.extend(
+    extra_outputs.extend(
         expand("outputs/metag.x.genomes.{k}.manysearch.png", k=KSIZES),
         )
-    genome_outputs.extend(
+    extra_outputs.extend(
         expand("outputs/prefetch/all_metag.x.genomes.{k}.summary.png",
                k=GATHER_KSIZE),
+        )
+
+if RUN_GATHER:
+    extra_outputs.extend(
+        expand("outputs/metag_gather/{n}.{k}.gather.csv",
+               n=METAGENOME_NAMES, k=GATHER_KSIZE),
+        )
+    extra_outputs.extend(
+        expand("outputs/metag_gather/metag.{k}.kreport.csv", k=GATHER_KSIZE),
         )
 
 rule all:
@@ -99,14 +87,7 @@ rule all:
         expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
         expand("outputs/metag_compare.{k}.abund.matrix.png", k=KSIZES),
         expand("outputs/metag_compare.{k}.flat.matrix.png", k=KSIZES),
-        expand("outputs/metag_gather/{n}.{k}.gather.txt",
-               n=METAGENOME_NAMES, k=GATHER_KSIZE),
-        expand("outputs/metag_gather/{n}.{k}.gather.csv",
-               n=METAGENOME_NAMES, k=GATHER_KSIZE),
-        expand("outputs/metag_gather/{n}.{k}.kreport.out",
-               n=METAGENOME_NAMES, k=GATHER_KSIZE),
-        expand("outputs/metag_gather/metag.{k}.kreport.csv", k=GATHER_KSIZE),
-        genome_outputs,
+        extra_outputs,
 
 
 rule sketch:
@@ -124,7 +105,7 @@ rule sketch_genome:
         "sketches/genomes/{name}.sig.zip"
     shell: """
         sourmash sketch dna {input:q} -o {output:q} \
-           -p {sketch_params} --name {wildcards.name:q}
+           -p {genome_sketch_params} --name {wildcards.name:q}
     """
 
 def metag_individual_inp(wc):
@@ -139,7 +120,7 @@ rule sketch_metag_individual_data_file:
         echo name,genome_filename,protein_filename > {output:q}.manysketch.csv
         echo {wildcards.name},{input:q}, >> {output:q}.manysketch.csv
         sourmash scripts manysketch {output:q}.manysketch.csv -o {output:q} \
-           -p {sketch_params_abund} -c 1
+           -p {metag_sketch_params} -c 1
 
     """
 
