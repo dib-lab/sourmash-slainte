@@ -16,3 +16,7 @@ using [sourmash](https://sourmash.readthedocs.io/).
 ---
 
 <!-- [Config / macros information](macros_info.md) -->
+
+---
+
+## [Sample information](metag_sample_check.md)

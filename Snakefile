@@ -95,6 +95,7 @@ rule all:
         expand("sketches/metag/{n}.sig.zip", n=METAGENOME_NAMES),
         expand("sketches/metag_individual_sketches/{f}.sig.zip",
                f=METAGENOME_FILES),
+        "outputs/check/metag.x.individual.21.manysearch.png",
         expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
         expand("outputs/metag_compare.{k}.abund.matrix.png", k=KSIZES),
         expand("outputs/metag_compare.{k}.flat.matrix.png", k=KSIZES),
