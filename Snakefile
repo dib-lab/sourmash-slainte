@@ -4,10 +4,11 @@ from collections import defaultdict
 configfile: "config.yml"
 
 wildcard_constraints:
-    name='[^./]+',
-    k = "\\d+",
+    name='[^./]+',              # for 'name', don't recurse into subdirectories
+    k = "\\d+",                 # for k-mer sizes, allow numbers only
 
 def strip_suffix(x):
+    "Remove standard DNA file suffixes to get the filename"
     basename = os.path.basename(x)
     while 1:
         prefix, suffix = os.path.splitext(basename)
@@ -17,7 +18,14 @@ def strip_suffix(x):
             break
     return basename
 
+# k-mer sizes to sketch:
 KSIZES = [21, 31, 51]
+
+# param string - k-sizes should match above
+sketch_params = "k=21,k=31,k=51,scaled=1000"
+sketch_params_abund = "k=21,k=31,k=51,scaled=1000,abund"
+
+# k-mer sizes for running gather:
 GATHER_KSIZE = 21
 
 GENOME_NAMES = {}
@@ -106,8 +114,7 @@ rule sketch_genome:
         "sketches/genomes/{name}.sig.zip"
     shell: """
         sourmash sketch dna {input:q} -o {output:q} \
-           -p k=21,k=31,k=51,scaled=1000 \
-           --name {wildcards.name:q}
+           -p {sketch_params} --name {wildcards.name:q}
     """
 
 
@@ -121,8 +128,7 @@ rule sketch_metag:
         "sketches/metag/{name}.sig.zip"
     shell: """
         sourmash sketch dna {input:q} -o {output:q} \
-           -p abund,k=21,k=31,k=51,scaled=1000 \
-           --name {wildcards.name:q}
+           -p {sketch_params_abund} --name {wildcards.name:q}
     """
 
 def metag_individual_inp(wc):
@@ -137,7 +143,7 @@ rule sketch_metag_individual_data_file:
         echo name,genome_filename,protein_filename > {output:q}.manysketch.csv
         echo {wildcards.name},{input:q}, >> {output:q}.manysketch.csv
         sourmash scripts manysketch {output:q}.manysketch.csv -o {output:q} \
-           -p k=21,k=31,k=51,scaled=1000
+           -p {sketch_params_abund}
 
     """
 
