@@ -1,22 +1,12 @@
-import glob, os, csv
+import glob, csv
 from collections import defaultdict
+from slainte_functions import *
 
 configfile: "config.yml"
 
 wildcard_constraints:
     name='[^./]+',              # for 'name', don't recurse into subdirectories
     k = "\\d+",                 # for k-mer sizes, allow numbers only
-
-def strip_suffix(x):
-    "Remove standard DNA file suffixes to get the filename"
-    basename = os.path.basename(x)
-    while 1:
-        prefix, suffix = os.path.splitext(basename)
-        if suffix in ('.fa', '.fna', '.fasta', '.fq', '.fastq', '.gz', '.bz2'):
-            basename = prefix
-        else:
-            break
-    return basename
 
 # k-mer sizes to sketch:
 KSIZES = [21, 31, 51]
@@ -32,13 +22,7 @@ GATHER_KSIZE = 21
 # collect all genome files.
 #
 
-GENOME_NAMES = {}
-for g in config['genomes']:
-    files = glob.glob(g)
-    for filename in files:
-        name = strip_suffix(filename)
-        assert name not in GENOME_NAMES, f"duplicate prefix for {filename}"
-        GENOME_NAMES[name] = filename
+GENOME_NAMES = collect_genomes(config['genomes'])
 
 if len(GENOME_NAMES) > 0 and config['display_genomes']:
     ENABLE_GENOMES = True
