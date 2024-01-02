@@ -1,5 +1,3 @@
-import glob, csv
-from collections import defaultdict
 from slainte_functions import *
 
 configfile: "config.yml"
@@ -11,9 +9,10 @@ wildcard_constraints:
 # k-mer sizes to sketch:
 KSIZES = [21, 31, 51]
 
-# param string - k-sizes should match above
-sketch_params = "k=21,k=31,k=51,scaled=1000"
-sketch_params_abund = "k=21,k=31,k=51,scaled=1000,abund"
+# param strings for sketching
+k_params = ",".join(expand("k={k}", k=KSIZES))
+genome_sketch_params = "scaled=1000," + k_params
+metag_sketch_params = "scaled=1000,abund," + k_params
 
 # k-mer sizes for running gather:
 GATHER_KSIZE = 21
@@ -34,39 +33,27 @@ else:
 # collect all metagenome files, based on contents of sample_info CSV file.
 #
 
-METAG_PATH=config['metagenome_dir']
-METAGENOME_NAMES=defaultdict(set)
-METAGENOME_FILES=dict()
-with open(config['sample_info'], 'r', newline='') as sample_fp:
-    r = csv.DictReader(sample_fp)
-
-    for row in r:
-        # use the 'prefix' column as the prefix for a wildcard
-        fileglob = METAG_PATH.rstrip('/') + '/' + row['prefix'] + '*'
-        name = row['name']
-
-        files = glob.glob(fileglob)
-        pretty_print_files = []
-        for f in files:
-            pretty_print_files.append(f"'{f}'")
-        pretty_print_files = "\n\t" + "\n\t".join(pretty_print_files)
-        print(f"for sample '{name}', wildcard '{fileglob}' matches:{pretty_print_files}")
-        assert files, fileglob
-
-        METAGENOME_NAMES[name].update(files)
-
-        for filename in files:
-            individual_name = strip_suffix(filename)
-            assert individual_name not in METAGENOME_FILES, individual_name
-            METAGENOME_FILES[individual_name] = filename
+metag_path = config['metagenome_dir']
+samples_csv = config['sample_info']
+METAGENOME_NAMES, METAGENOME_FILES = load_metagenome_files(metag_path,
+                                                           samples_csv,
+                                                           debug=True)
 
 print(f"Found {len(METAGENOME_NAMES)} samples total!")
+
+#
+# configure - run gather?
+#
 
 if config['run_gather']:
     RUN_GATHER = True
 else:
     print('** NOTE: run_gather is False. Disabling gather output!')
     RUN_GATHER = False
+
+#####
+##### all configuration decisions made! now, make it so.
+#####
 
 extra_outputs = []
 if ENABLE_GENOMES:
@@ -118,7 +105,7 @@ rule sketch_genome:
         "sketches/genomes/{name}.sig.zip"
     shell: """
         sourmash sketch dna {input:q} -o {output:q} \
-           -p {sketch_params} --name {wildcards.name:q}
+           -p {genome_sketch_params} --name {wildcards.name:q}
     """
 
 def metag_individual_inp(wc):
@@ -133,7 +120,7 @@ rule sketch_metag_individual_data_file:
         echo name,genome_filename,protein_filename > {output:q}.manysketch.csv
         echo {wildcards.name},{input:q}, >> {output:q}.manysketch.csv
         sourmash scripts manysketch {output:q}.manysketch.csv -o {output:q} \
-           -p {sketch_params_abund} -c 1
+           -p {metag_sketch_params} -c 1
 
     """
 
