@@ -40,11 +40,10 @@ for g in config['genomes']:
         assert name not in GENOME_NAMES, f"duplicate prefix for {filename}"
         GENOME_NAMES[name] = filename
 
-print(f"Found {len(GENOME_NAMES)} genome files.")
-if len(GENOME_NAMES) > 0:
+if len(GENOME_NAMES) > 0 and config['display_genomes']:
     ENABLE_GENOMES = True
 else:
-    print('** NOTE: no genome files found. Disabling genome output!')
+    print('** NOTE: no genome files found OR display_genomes is False. Disabling genome output!')
     ENABLE_GENOMES = False
 
 #
@@ -63,32 +62,50 @@ with open(config['sample_info'], 'r', newline='') as sample_fp:
         name = row['name']
 
         files = glob.glob(fileglob)
-        print(f"for metagenome '{name}', wildcard '{fileglob}' matches: {files}")
+        pretty_print_files = []
+        for f in files:
+            pretty_print_files.append(f"'{f}'")
+        pretty_print_files = "\n\t" + "\n\t".join(pretty_print_files)
+        print(f"for sample '{name}', wildcard '{fileglob}' matches:{pretty_print_files}")
         assert files, fileglob
 
         METAGENOME_NAMES[name].update(files)
 
         for filename in files:
-            print('xxx', filename)
             individual_name = strip_suffix(filename)
             assert individual_name not in METAGENOME_FILES, individual_name
             METAGENOME_FILES[individual_name] = filename
 
-print(f"Found {len(METAGENOME_NAMES)} metagenome names.")
+print(f"Found {len(METAGENOME_NAMES)} samples total!")
 
+if config['run_gather']:
+    RUN_GATHER = True
+else:
+    print('** NOTE: run_gather is False. Disabling gather output!')
+    RUN_GATHER = False
 
-genome_outputs = []
+extra_outputs = []
 if ENABLE_GENOMES:
-    genome_outputs.extend(
+    extra_outputs.extend(
         expand("outputs/genome_compare.{k}.ani.matrix.png", k=KSIZES)
         )
-    genome_outputs.extend(
+    extra_outputs.extend(
         expand("outputs/metag.x.genomes.{k}.manysearch.png", k=KSIZES),
         )
-    genome_outputs.extend(
+    extra_outputs.extend(
         expand("outputs/prefetch/all_metag.x.genomes.{k}.summary.png",
                k=GATHER_KSIZE),
         )
+
+if RUN_GATHER:
+    extra_outputs.extend(
+        expand("outputs/metag_gather/{n}.{k}.gather.csv",
+               n=METAGENOME_NAMES, k=GATHER_KSIZE),
+        )
+    extra_outputs.extend(
+        expand("outputs/metag_gather/metag.{k}.kreport.csv", k=GATHER_KSIZE),
+        )
+
 
 rule all:
     input:
@@ -99,14 +116,7 @@ rule all:
         expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
         expand("outputs/metag_compare.{k}.abund.matrix.png", k=KSIZES),
         expand("outputs/metag_compare.{k}.flat.matrix.png", k=KSIZES),
-        expand("outputs/metag_gather/{n}.{k}.gather.txt",
-               n=METAGENOME_NAMES, k=GATHER_KSIZE),
-        expand("outputs/metag_gather/{n}.{k}.gather.csv",
-               n=METAGENOME_NAMES, k=GATHER_KSIZE),
-        expand("outputs/metag_gather/{n}.{k}.kreport.out",
-               n=METAGENOME_NAMES, k=GATHER_KSIZE),
-        expand("outputs/metag_gather/metag.{k}.kreport.csv", k=GATHER_KSIZE),
-        genome_outputs,
+        extra_outputs,
 
 
 rule sketch:
