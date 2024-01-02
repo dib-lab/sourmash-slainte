@@ -1,7 +1,10 @@
+# this module is used by both Snakefile and mkdocs-macros.
+# see 'define_env' for mkdocs-macros hook.
 import glob
 import os
 import csv
 from collections import defaultdict
+import pandas as pd
 
 
 __all__ = ['strip_suffix',
@@ -59,3 +62,18 @@ def load_metagenome_files(metag_path, samples_csv, debug=False):
                 METAGENOME_FILES[individual_name] = filename
 
     return METAGENOME_NAMES, METAGENOME_FILES
+
+
+def define_env(env):
+    "Hook function for mkdocs"
+
+    @env.macro
+    def render_csv(filename):
+        if os.path.exists(filename):
+            try:
+                df = pd.read_csv(filename)
+                return df.to_markdown()
+            except pd.errors.EmptyDataError:
+                pass
+
+        return ""

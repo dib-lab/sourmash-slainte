@@ -11,13 +11,17 @@ using [sourmash](https://sourmash.readthedocs.io/).
 [Metagenomes against genomes](metag_x_genomes.md) - which genomes are in which metagenomes?
 {% endif %}
 
+{% if run_gather %}
 [Metagenome taxonomy summary](metag_tax.md) - a taxonomic breakdown across all metagenomes.
+{% endif %}
 
 ---
 
 <!-- [Config / macros information](macros_info.md) -->
 
 ---
+
+{% if run_gather %}
 
 ## Databases and taxonomy
 
@@ -31,7 +35,15 @@ Taxonomy used for `sourmash tax metagenome`:
 * {{ tax }}
 {% endfor %}
 
+{% else %}
+
+No metagenome gather or taxonomic analysis is being performed;
+`run_gather` setting in `config.yml` is False.
+
+{% endif %}
+
 ## Sample information
 
 See the [sample x datafile](metag_sample_check.md) comparison for
 which samples contain which data.
+

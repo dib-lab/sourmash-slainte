@@ -2,11 +2,11 @@ metagenome_dir: data/metagenomes/
 
 sample_info: samples.csv
 
-display_genomes: False # for mkdocs, temporarily...
+display_genomes: True # for mkdocs, temporarily...
 genomes:
 - data/genomes/*.fa.gz
 
-run_gather: False
+run_gather: True
 
 databases:
 - ../sourmash/podar-ref.zip

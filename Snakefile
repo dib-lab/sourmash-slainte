@@ -1,3 +1,4 @@
+# import utility functions:
 from slainte_functions import *
 
 configfile: "config.yml"
@@ -76,7 +77,6 @@ if RUN_GATHER:
     extra_outputs.extend(
         expand("outputs/metag_gather/metag.{k}.kreport.csv", k=GATHER_KSIZE),
         )
-
 
 rule all:
     input:
