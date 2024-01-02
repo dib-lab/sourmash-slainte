@@ -42,8 +42,7 @@ No metagenome gather or taxonomic analysis is being performed;
 
 {% endif %}
 
-## Sample information
+## Metagenome sample information
 
-See the [sample x datafile](metag_sample_check.md) comparison for
-which samples contain which data.
-
+See the [sample x datafile](metag_sample_check.md) comparison to
+verify which samples contain which data.
