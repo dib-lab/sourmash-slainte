@@ -11,4 +11,4 @@ html:
 	mkdocs build
 
 serve:
-	mkdocs serve
+	mkdocs serve --watch Snakefile --watch config.yml

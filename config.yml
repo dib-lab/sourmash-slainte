@@ -2,6 +2,7 @@ metagenome_dir: data/metagenomes/
 
 sample_info: samples.csv
 
+display_genomes: True # for mkdocs, temporarily...
 genomes:
 - data/genomes/*.fa.gz
 

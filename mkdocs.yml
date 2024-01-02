@@ -1,0 +1,18 @@
+site_name: sourmash slainte
+
+theme:
+   name: material
+
+plugins:
+- search
+- table-reader
+- macros:
+     include_yaml:
+       - config.yml
+markdown_extensions:
+- admonition
+- pymdownx.details
+- pymdownx.superfences
+- pymdownx.tasklist:
+    custom_checkbox: true
+    clickable_checkbox: true
