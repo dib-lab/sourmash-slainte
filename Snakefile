@@ -28,6 +28,10 @@ sketch_params_abund = "k=21,k=31,k=51,scaled=1000,abund"
 # k-mer sizes for running gather:
 GATHER_KSIZE = 21
 
+#
+# collect all genome files.
+#
+
 GENOME_NAMES = {}
 for g in config['genomes']:
     files = glob.glob(g)
@@ -43,6 +47,10 @@ else:
     print('** NOTE: no genome files found. Disabling genome output!')
     ENABLE_GENOMES = False
 
+#
+# collect all metagenome files, based on contents of sample_info CSV file.
+#
+
 METAG_PATH=config['metagenome_dir']
 METAGENOME_NAMES=defaultdict(set)
 METAGENOME_FILES=dict()
@@ -50,11 +58,12 @@ with open(config['sample_info'], 'r', newline='') as sample_fp:
     r = csv.DictReader(sample_fp)
 
     for row in r:
+        # use the 'prefix' column as the prefix for a wildcard
         fileglob = METAG_PATH.rstrip('/') + '/' + row['prefix'] + '*'
         name = row['name']
 
         files = glob.glob(fileglob)
-        print('F', name, fileglob, files)
+        print(f"for metagenome '{name}', wildcard '{fileglob}' matches: {files}")
         assert files, fileglob
 
         METAGENOME_NAMES[name].update(files)
@@ -74,7 +83,7 @@ if ENABLE_GENOMES:
         expand("outputs/genome_compare.{k}.ani.matrix.png", k=KSIZES)
         )
     genome_outputs.extend(
-        expand("outputs/metag.x.genomes.{k}.png", k=KSIZES),
+        expand("outputs/metag.x.genomes.{k}.manysearch.png", k=KSIZES),
         )
     genome_outputs.extend(
         expand("outputs/prefetch/all_metag.x.genomes.{k}.summary.png",
@@ -84,7 +93,7 @@ if ENABLE_GENOMES:
 rule all:
     input:
         expand("sketches/metag/{n}.sig.zip", n=METAGENOME_NAMES),
-        expand("sketches/metag/individual_sketches/{f}.sig.zip",
+        expand("sketches/metag_individual_sketches/{f}.sig.zip",
                f=METAGENOME_FILES),
         expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
         expand("outputs/metag_compare.{k}.abund.matrix.png", k=KSIZES),
@@ -117,20 +126,6 @@ rule sketch_genome:
            -p {sketch_params} --name {wildcards.name:q}
     """
 
-
-def metag_inp(wc):
-    return list(METAGENOME_NAMES[wc.name])
-
-rule sketch_metag:
-    input:
-        metag_inp
-    output:
-        "sketches/metag/{name}.sig.zip"
-    shell: """
-        sourmash sketch dna {input:q} -o {output:q} \
-           -p {sketch_params_abund} --name {wildcards.name:q}
-    """
-
 def metag_individual_inp(wc):
     return METAGENOME_FILES[wc.name]
 
@@ -138,13 +133,47 @@ rule sketch_metag_individual_data_file:
     input:
         metag_individual_inp
     output:
-        "sketches/metag/individual_sketches/{name}.sig.zip",
+        "sketches/metag_individual_sketches/{name}.sig.zip",
     shell: """
         echo name,genome_filename,protein_filename > {output:q}.manysketch.csv
         echo {wildcards.name},{input:q}, >> {output:q}.manysketch.csv
         sourmash scripts manysketch {output:q}.manysketch.csv -o {output:q} \
-           -p {sketch_params_abund}
+           -p {sketch_params_abund} -c 1
 
+    """
+
+def metag_get_individual_sketches(wc):
+    name = wc.name              # this will be sample name for combined file
+
+    # now get the individual sketch files for this sample
+    datafiles = METAGENOME_NAMES[name]
+    sketch_names = []
+    for datafile in datafiles:
+        for k, v in METAGENOME_FILES.items():
+            if datafile == v:
+                sketch_names.append(k)
+
+    # convert to filenames
+    return expand("sketches/metag_individual_sketches/{f}.sig.zip",
+                  f=sketch_names)
+
+rule merge_individual_sketches:
+    input:
+        metag_get_individual_sketches
+    output:
+        "sketches/metag/{name}.{k}.sig.gz"
+    shell: """
+        sourmash sig merge -k {wildcards.k} {input:q} -o {output:q} \
+           --name {wildcards.name:q}
+    """
+
+rule combine_merged_sketches:
+    input:
+        expand("sketches/metag/{{name}}.{k}.sig.gz", k=KSIZES)
+    output:
+        "sketches/metag/{name}.sig.zip"
+    shell: """
+        sourmash sig cat {input} -o {output}
     """
 
 rule make_metagenome_compare_abund:
@@ -207,11 +236,20 @@ rule list_databases:
         find {input} -name "*.sig.gz" > {output}
     """
 
-rule extract_sketch:
+rule extract_genome_sketch:
     input:
-        "sketches/{dir}/{name}.sig.zip",
+        "sketches/genomes/{name}.sig.zip",
     output:
-        "sketches/{dir}/{name}.{k}.sig.gz",
+        "sketches/genomes/{name}.{k}.sig.gz",
+    shell: """
+        sourmash sig cat {input} -o {output} -k {wildcards.k}
+    """
+
+rule extract_individual_sketch:
+    input:
+        "sketches/metag_individual_sketches/{name}.sig.zip",
+    output:
+        "sketches/metag_individual_sketches/{name}.{k}.sig.gz",
     shell: """
         sourmash sig cat {input} -o {output} -k {wildcards.k}
     """
@@ -292,12 +330,35 @@ rule list_metag:
         ls -1 {input} > {output}
     """
 
+rule list_individual_metag_sketches:
+    input:
+        expand("sketches/metag_individual_sketches/{n}.{{k}}.sig.gz", n=METAGENOME_FILES),
+    output:
+        "interim/list.metag-individual-sketches.{k}.txt"
+    shell: """
+        ls -1 {input} > {output}
+    """
+
+rule metag_x_individual_sketches_csv:
+    input:
+        metag="interim/list.metag-sketches.{k}.txt",
+        individual="interim/list.metag-individual-sketches.{k}.txt",
+    output:
+        "outputs/check/metag.x.individual.{k}.manysearch.raw.csv"
+    threads: 8
+    shell: """
+        sourmash scripts manysearch -k {wildcards.k} \
+            {input.individual} {input.metag} \
+            -c {threads} -t 0 \
+            -o {output}
+    """
+
 rule metag_x_genomes_csv:
     input:
         metag="interim/list.metag-sketches.{k}.txt",
         genomes="interim/list.genome-sketches.{k}.txt",
     output:
-        "outputs/metag.x.genomes.{k}.manysearch.csv"
+        "outputs/metag.x.genomes.{k}.manysearch.raw.csv"
     threads: 8
     shell: """
         sourmash scripts manysearch -k {wildcards.k} \
@@ -308,18 +369,18 @@ rule metag_x_genomes_csv:
 
 rule summarize_manysearch:
     input:
-        "outputs/metag.x.genomes.{k}.manysearch.csv"
+        "{path}.manysearch.raw.csv"
     output:
-        "outputs/metag.x.genomes.{k}.summary.csv"
+        "{path}.manysearch.summary.csv"
     shell: """
         scripts/summarize-manysearch.py {input} -o {output}
     """
 
 rule plot_manysearch:
     input:
-        "outputs/metag.x.genomes.{k}.summary.csv"
+        "{path}.manysearch.summary.csv"
     output:
-        "outputs/metag.x.genomes.{k}.png"
+        "{path}.manysearch.png"
     shell: """
         scripts/plot-genome-vs-metag.py {input} -o {output}
     """
