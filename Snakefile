@@ -259,9 +259,11 @@ rule metag_gather:
     resources:
         gather=1
     shell: """
-        sourmash gather {input.query} {input.db} -k {wildcards.k} \
-            --picklist {input.fastgather_out}:match_md5:md5 \
-            -o {output.csv} > {output.out}
+        scripts/calc-full-gather.py {input.query} \
+            {input.db} {input.fastgather_out} -o {output.csv} > {output.out}
+#        sourmash gather {input.query} {input.db} -k {wildcards.k} \
+#            --picklist {input.fastgather_out}:match_md5:md5 \
+#            -o {output.csv} > {output.out}
     """
 
 rule prepare_taxdb:
