@@ -50,6 +50,8 @@ def main():
                    help='CSV output')
     p.add_argument('-q', '--quiet', default=False, action='store_true',
                    help='suppress output')
+    p.add_argument('--estimate-ani-ci', default=False, action='store_true',
+                   help='estimate ANI confidence intervals (default: False)')
     args = p.parse_args()
 
     set_quiet(args.quiet)
@@ -138,7 +140,7 @@ def main():
                               threshold_bp=args.threshold_bp,
                               orig_query_len=len(orig_query_mh),
                               orig_query_abunds=orig_query_abunds,
-                              estimate_ani_ci=True,
+                              estimate_ani_ci=args.estimate_ani_ci,
                               sum_weighted_found=sum_weighted_found,
                               total_weighted_hashes=sum_abunds)
 
