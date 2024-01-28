@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# copied from https://github.com/ctb/2024-calc-full-gather commit a09215ec5b70
+# copied from https://github.com/ctb/2024-calc-full-gather commit 87d7d9ec8c67c
 # for now.
 """
 
