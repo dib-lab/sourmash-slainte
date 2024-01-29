@@ -99,7 +99,11 @@ rule fastgather:
     input:
         expand("outputs/metag_gather/{n}.{k}.fastgather.csv",
                n=METAGENOME_NAMES, k=GATHER_KSIZE),
-        )
+
+rule gather:
+    input:
+        expand("outputs/metag_gather/{n}.{k}.gather.csv",
+               n=METAGENOME_NAMES, k=GATHER_KSIZE),
 
 def genome_inp(wc):
     return GENOME_NAMES[wc.name]
