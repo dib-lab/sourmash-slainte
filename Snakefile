@@ -95,6 +95,12 @@ rule sketch:
         expand("sketches/metag/{n}.sig.zip", n=METAGENOME_NAMES),
         expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
 
+rule fastgather:
+    input:
+        expand("outputs/metag_gather/{n}.{k}.fastgather.csv",
+               n=METAGENOME_NAMES, k=GATHER_KSIZE),
+        )
+
 def genome_inp(wc):
     return GENOME_NAMES[wc.name]
 
