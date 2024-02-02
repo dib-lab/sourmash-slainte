@@ -180,8 +180,10 @@ def main():
         # write out
         if result_writer is None:
             result_writer = result.init_dictwriter(outfp)
-        print('XXX writing')
         result.write(result_writer)
+
+        outfp.flush()
+        sys.stdout.flush()
 
     csv_writer.close()
         
