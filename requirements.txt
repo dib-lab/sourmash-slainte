@@ -1,3 +1,6 @@
+sourmash_plugin_containment_search>=0.4.0
+
+# mkdocs stuff
 pymdown-extensions
 mkdocs-material
 mkdocs-material-extensions

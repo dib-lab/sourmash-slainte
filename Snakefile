@@ -371,13 +371,14 @@ rule metag_x_genomes_prefetch:
     input:
         genomes = expand("sketches/genomes/{n}.sig.zip", n=GENOME_NAMES),
         metag="sketches/metag/{metag}.sig.zip",
-        bin = "scripts/calc-weighted-overlap.py",
     output:
         "outputs/prefetch/{metag}.x.genomes.{k}.csv",
     threads: 1
     shell: """
-        {input.bin} -k {wildcards.k} --genomes {input.genomes} \
-            --metagenomes {input.metag} -o {output}
+        sourmash scripts mgmanysearch -k {wildcards.k} \
+            --queries {input.genomes} \
+            --against {input.metag} \
+            -o {output}
     """
 
 rule metag_x_genomes_prefetch_summary:
