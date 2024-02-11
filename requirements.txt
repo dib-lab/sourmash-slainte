@@ -1,4 +1,4 @@
-sourmash_plugin_containment_search>=0.4.0
+sourmash_plugin_containment_search>=0.4.3
 
 # mkdocs stuff
 pymdown-extensions
