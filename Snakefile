@@ -199,25 +199,6 @@ rule make_matrix_pdf:
         sourmash plot {input} --output-dir=outputs/
     """
 
-rule unpack_database:
-    input:
-        config['databases']
-    output:
-        directory(config.get('database_sketches_dir', 'interim/database_sketches.d'))
-    shell: """
-        sourmash sig split {input} --outdir {output} -E .sig.gz \
-            -k {GATHER_KSIZE}
-    """
-        
-rule list_databases:
-    input:
-        config.get('database_sketches_dir', 'interim/database_sketches.d')
-    output:
-        "interim/list.database-sketches.txt"
-    shell: """
-        find {input} -name "*.sig.gz" > {output}
-    """
-
 rule extract_genome_sketch:
     input:
         "sketches/genomes/{name}.sig.zip",
@@ -238,8 +219,8 @@ rule extract_individual_sketch:
 
 rule metag_fastgather:
     input:
-        query="sketches/metag/{name}.{k}.sig.gz",
-        db="interim/list.database-sketches.txt"
+        query="sketches/metag/{name}.sig.zip",
+        db = config['databases'],
     output:
         "outputs/metag_gather/{name}.{k}.fastgather.csv",
     threads: 64
