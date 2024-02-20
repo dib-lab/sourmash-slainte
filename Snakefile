@@ -1,3 +1,5 @@
+# @CTB switch to using manifests?
+
 # import utility functions:
 from slainte_functions import *
 
